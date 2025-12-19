@@ -9,6 +9,27 @@ poetry install
 poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
+### Start local MySQL/Redis (optional)
+
+```bash
+# from template-generated project
+cd docker
+./start_infra.sh            # start mysql & redis
+# later:
+./stop_infra.sh             # stop (keep volumes)
+./stop_infra.sh --purge     # stop and remove volumes
+```
+
+Initialize multiple MySQL users/databases
+
+- Put SQL files in `docker/mysql-init/` (already contains `00-init.sql` examples). They run once on first init.
+- If you already initialized once, purge volumes to re-run init:
+  ```bash
+  cd docker
+  ./stop_infra.sh --purge
+  ./start_infra.sh
+  ```
+
 ### Environment
 
 Copy `.env.example` to `.env` and adjust if needed.

@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")"
+
+ENV_FILE_OPT=""
+if [[ -f "../.env" ]]; then
+  ENV_FILE_OPT="--env-file ../.env"
+fi
+
+docker compose -f docker-compose.infra.yml ${ENV_FILE_OPT} up -d
+
+

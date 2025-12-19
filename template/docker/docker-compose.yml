@@ -24,17 +24,13 @@ services:
       - REDIS_URL=${REDIS_URL:-__REDIS_URL__}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-__CELERY_BROKER_URL__}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-__CELERY_RESULT_BACKEND__}
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_started
     ports:
       - "8000:8000"
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     volumes:
       - ..:/app
       - ../logs:/app/logs
+    # attach to default external network
 
   __APP_NAME__-worker:
     container_name: __APP_NAME___worker
@@ -53,42 +49,12 @@ services:
       - REDIS_URL=${REDIS_URL:-__REDIS_URL__}
       - CELERY_BROKER_URL=${CELERY_BROKER_URL:-__CELERY_BROKER_URL__}
       - CELERY_RESULT_BACKEND=${CELERY_RESULT_BACKEND:-__CELERY_RESULT_BACKEND__}
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_started
     command: ["celery", "-A", "app.tasks.celery:celery_app", "worker", "--loglevel=INFO"]
     volumes:
       - ..:/app
       - ../logs:/app/logs
-
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
-    environment:
-      - MYSQL_ROOT_PASSWORD=root
-      - MYSQL_DATABASE=__APP_NAME__
-      - MYSQL_USER=__APP_NAME__
-      - MYSQL_PASSWORD=123456
-    ports:
-      - "13306:3306"
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
-    volumes:
-      - db_data:/var/lib/mysql
-
-  redis:
-    image: redis:7
-    container_name: redis
-    ports:
-      - "16379:6379"
-
-volumes:
-  db_data:
-
-
+    # attach to default external network
+networks:
+  default:
+    external: true
+    name: ${SHARED_NETWORK_NAME:-docker_default}

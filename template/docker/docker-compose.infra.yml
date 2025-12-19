@@ -1,0 +1,39 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ${MYSQL_CONTAINER_NAME:-mysql}
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-root}
+      - MYSQL_DATABASE=${MYSQL_DATABASE:-appdb}
+      - MYSQL_USER=${MYSQL_USER:-appuser}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-123456}
+    ports:
+      - "${MYSQL_PORT:-13306}:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+    # attach to default network (external)
+
+  redis:
+    image: redis:7
+    container_name: ${REDIS_CONTAINER_NAME:-redis}
+    ports:
+      - "${REDIS_PORT:-16379}:6379"
+    # attach to default network (external)
+
+networks:
+  default:
+    # use an external network; ensures compatibility with existing docker_default/xxx_default
+    external: true
+    name: ${SHARED_NETWORK_NAME:-docker_default}
+
+volumes:
+  db_data:
+
+
