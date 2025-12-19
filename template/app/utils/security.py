@@ -1,27 +1,31 @@
-import hashlib
-from typing import Optional
-from datetime import datetime, timedelta
-from jose import jwt, JWTError
-from app.core.config import settings
+from datetime import datetime, timedelta, timezone
+from typing import Any, Optional
+from jose import jwt
+from passlib.context import CryptContext
 
 
-def hash_api_key(token_plain: str, salt: str) -> str:
-    data = f"{salt}:{token_plain}".encode("utf-8")
-    return hashlib.sha256(data).hexdigest()
+pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
+JWT_ALG = "HS256"
+JWT_SECRET = "CHANGE_ME_SECRET"
+# Token validity: 30 days
+JWT_EXPIRE_MINUTES = 60 * 24 * 30
 
 
-def create_access_token(subject: str, expires_minutes: int = 60) -> str:
-    # minimal helper used by demos/tests
-    expire = datetime.utcnow() + timedelta(minutes=expires_minutes)
-    to_encode = {"sub": subject, "exp": expire}
-    return jwt.encode(to_encode, settings.log_dir + settings.app_name, algorithm="HS256")
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
 
 
-def verify_access_token(token: str) -> Optional[str]:
-    try:
-        payload = jwt.decode(token, settings.log_dir + settings.app_name, algorithms=["HS256"])
-        return str(payload.get("sub")) if payload.get("sub") is not None else None
-    except JWTError:
-        return None
+def verify_password(plain_password: str, password_hash: str) -> bool:
+    return pwd_context.verify(plain_password, password_hash)
+
+
+def create_access_token(subject: str, expires_delta: Optional[timedelta] = None) -> str:
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=JWT_EXPIRE_MINUTES))
+    to_encode: dict[str, Any] = {"sub": subject, "exp": expire}
+    return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALG)
+
+
+def decode_access_token(token: str) -> dict[str, Any]:
+    return jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
 
 

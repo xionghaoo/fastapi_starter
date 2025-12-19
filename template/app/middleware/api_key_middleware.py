@@ -1,34 +1,40 @@
+from typing import Callable, Iterable, Optional, List
 import re
-from typing import Iterable, Pattern, Tuple
+from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import Response, JSONResponse
-from app.repo.session import SessionLocal
+from starlette.types import ASGIApp
+
 from app.repo.api_key_repository import ApiKeyRepository
-from app.api.response import error
+from app.repo.session import SessionLocal
 
 
 class ApiKeyMiddleware(BaseHTTPMiddleware):
-    def __init__(self, app, include_patterns: Iterable[str] | Tuple[str, ...] = ()) -> None:
+    def __init__(self, app: ASGIApp, include_patterns: Iterable[str] = ()) -> None:
         super().__init__(app)
-        self.patterns: Tuple[Pattern[str], ...] = tuple(re.compile(p) for p in include_patterns)
+        self.include_regex: List[re.Pattern[str]] = [re.compile(p) for p in include_patterns]
 
-    async def dispatch(self, request: Request, call_next):
-        if self.patterns and not any(p.match(request.url.path) for p in self.patterns):
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Response]) -> Response:
+        if request.method == "OPTIONS":
             return await call_next(request)
-
-        token = request.headers.get("X-API-KEY")
+        path: str = request.url.path
+        if not any(r.search(path) for r in self.include_regex):
+            return await call_next(request)
+        token: Optional[str] = request.headers.get("X-API-Key")
         if not token:
-            return error(message="Missing X-API-KEY", status_code=401)
+            return Response(status_code=401, content="Missing API key")
+
         db = SessionLocal()
         try:
             repo = ApiKeyRepository(db)
-            entity = repo.find_by_token_plain(token)
-            if not entity or not entity.is_valid():
-                return error(message="Invalid API key", status_code=401)
-            request.state.api_key_id = entity.id
-            return await call_next(request)
+            entity = repo.verify_plain(token)
+            if not entity:
+                return Response(status_code=401, content="Invalid API key")
+            repo.increment_usage(entity.id)
+            request.state.api_key_id = int(entity.id)
+            request.state.skip_jwt = True
         finally:
             db.close()
+
+        return await call_next(request)
 
 

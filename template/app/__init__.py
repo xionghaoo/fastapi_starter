@@ -10,6 +10,7 @@ from app.repo.session import Base, engine
 from app.api.v1 import router as v1_router
 from app.middleware.jwt_middleware import JWTMiddleware
 from app.middleware.api_key_middleware import ApiKeyMiddleware
+from app.static import STATIC_PATH
 
 __all__ = ["create_app", "Base", "engine"]
 
@@ -38,6 +39,20 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    app.add_middleware(
+        ApiKeyMiddleware,
+        include_patterns=(
+            r"/api/v1/demo/secure",
+            r"/api/v1/signature/.*"
+        )
+    )
+    app.add_middleware(
+        JWTMiddleware,
+        include_patterns=(
+            r"/api/v1/demo/me",
+        )
+    )
+
     @app.get("/health")
     def read_health() -> dict[str, str]:
         return {"status": "ok"}
@@ -50,9 +65,7 @@ def create_app() -> FastAPI:
             redoc_js_url="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js",
         )
 
-    app.mount("/static", StaticFiles(directory="app/static"), name="static")
-    app.add_middleware(ApiKeyMiddleware, include_patterns=(r"/api/v1/demo/secure", r"/api/v1/signature/.*"))
-    app.add_middleware(JWTMiddleware, include_patterns=(r"/api/v1/demo/me",))
+    app.mount("/static", StaticFiles(directory=STATIC_PATH), name="static")
     app.include_router(v1_router, prefix="/api/v1")
     return app
 

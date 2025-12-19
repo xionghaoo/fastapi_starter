@@ -132,7 +132,7 @@ def main() -> None:
     mysql_host = args.mysql_host or prompt_str("MySQL host", default="mysql", required=True)
     mysql_port = args.mysql_port if args.mysql_port is not None else prompt_int("MySQL port", default=3306, required=True)
     mysql_db = args.mysql_db or prompt_str("MySQL database", default=name, required=True)
-    mysql_user = args.mysql_user or prompt_str("MySQL user", default="lepus", required=True)
+    mysql_user = args.mysql_user or prompt_str("MySQL user", default=name, required=True)
     mysql_password = args.mysql_password or getpass.getpass("MySQL password: ")
     if not mysql_password:
         print("MySQL password is required.")
