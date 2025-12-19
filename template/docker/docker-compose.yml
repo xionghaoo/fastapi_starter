@@ -1,11 +1,19 @@
 services:
+  __APP_NAME__-deps:
+    image: __APP_NAME__:deps
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.deps
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-python:3.12-slim}
+
   __APP_NAME__-web:
     container_name: __APP_NAME___web
     build:
       context: ..
       dockerfile: docker/Dockerfile
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-docker.m.daocloud.io/library/python:3.11-slim}
+        DEPS_IMAGE: __APP_NAME__:deps
     working_dir: /app
     env_file:
       - ../.env
@@ -34,7 +42,7 @@ services:
       context: ..
       dockerfile: docker/Dockerfile
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-docker.m.daocloud.io/library/python:3.11-slim}
+        DEPS_IMAGE: __APP_NAME__:deps
     working_dir: /app
     env_file:
       - ../.env

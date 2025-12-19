@@ -1,0 +1,29 @@
+ARG BASE_IMAGE=python:3.12-slim
+ARG APP_NAME=__APP_NAME__
+FROM ${BASE_IMAGE}
+
+WORKDIR /opt/deps
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends curl build-essential gcc libssl-dev pkg-config default-libmysqlclient-dev; \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Poetry
+RUN curl -sSL https://install.python-poetry.org | python - && \
+    ln -s /root/.local/bin/poetry /usr/local/bin/poetry
+
+# Copy dependency manifests and install deps (no project code)
+COPY ../pyproject.toml ./pyproject.toml
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi --no-root
+
+LABEL org.opencontainers.image.title="${APP_NAME} deps" \
+      org.opencontainers.image.description="Prebuilt dependencies for ${APP_NAME} (FastAPI)" \
+      org.opencontainers.image.version="py312"
+
+
