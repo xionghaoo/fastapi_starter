@@ -6,9 +6,16 @@ WORKDIR /opt/deps
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1
+    PIP_NO_CACHE_DIR=1 \
+    PIP_INDEX_URL=https://mirrors.aliyun.com/pypi/simple \
+    PIP_TRUSTED_HOST=mirrors.aliyun.com
 
+# Switch APT sources to Aliyun mirrors (Debian)
 RUN set -eux; \
+    codename="$(. /etc/os-release && echo $VERSION_CODENAME)"; \
+    printf "deb http://mirrors.aliyun.com/debian %s main contrib non-free non-free-firmware\n" "$codename" > /etc/apt/sources.list; \
+    printf "deb http://mirrors.aliyun.com/debian %s-updates main contrib non-free non-free-firmware\n" "$codename" >> /etc/apt/sources.list; \
+    printf "deb http://mirrors.aliyun.com/debian-security %s-security main contrib non-free non-free-firmware\n" "$codename" >> /etc/apt/sources.list; \
     apt-get update; \
     apt-get install -y --no-install-recommends curl build-essential gcc libssl-dev pkg-config default-libmysqlclient-dev; \
     rm -rf /var/lib/apt/lists/*
@@ -20,6 +27,7 @@ RUN curl -sSL https://install.python-poetry.org | python - && \
 # Copy dependency manifests and install deps (no project code)
 COPY ../pyproject.toml ./pyproject.toml
 RUN poetry config virtualenvs.create false \
+    && poetry source add --priority=primary aliyun https://mirrors.aliyun.com/pypi/simple || true \
     && poetry install --no-interaction --no-ansi --no-root
 
 LABEL org.opencontainers.image.title="${APP_NAME} deps" \
