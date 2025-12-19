@@ -7,6 +7,9 @@ from starlette.staticfiles import StaticFiles
 from app.core.config import settings
 from app.core.logging import configure_logging
 from app.repo.session import Base, engine
+from app.api.v1 import router as v1_router
+from app.middleware.jwt_middleware import JWTMiddleware
+from app.middleware.api_key_middleware import ApiKeyMiddleware
 
 __all__ = ["create_app", "Base", "engine"]
 
@@ -48,6 +51,9 @@ def create_app() -> FastAPI:
         )
 
     app.mount("/static", StaticFiles(directory="app/static"), name="static")
+    app.add_middleware(ApiKeyMiddleware, include_patterns=(r"/api/v1/demo/secure", r"/api/v1/signature/.*"))
+    app.add_middleware(JWTMiddleware, include_patterns=(r"/api/v1/demo/me",))
+    app.include_router(v1_router, prefix="/api/v1")
     return app
 
 

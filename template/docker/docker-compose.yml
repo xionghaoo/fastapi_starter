@@ -57,7 +57,7 @@ services:
 
   mysql:
     image: mysql:8.0
-    container_name: __APP_NAME___mysql
+    container_name: mysql
     environment:
       - MYSQL_ROOT_PASSWORD=root
       - MYSQL_DATABASE=__APP_NAME__
@@ -76,7 +76,7 @@ services:
 
   redis:
     image: redis:7
-    container_name: __APP_NAME___redis
+    container_name: redis
     ports:
       - "16379:6379"
 

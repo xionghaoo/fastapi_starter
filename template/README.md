@@ -34,6 +34,12 @@ cd docker
 ./start_services.sh
 # visit: http://localhost:8000/docs
 ./stop_services.sh
+
+# recompile
+docker compose build --no-cache
+
+# look log
+docker-compose logs -f
 ```
 
 
