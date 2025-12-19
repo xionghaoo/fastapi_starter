@@ -78,6 +78,24 @@ def write_env_file(root: Path, env_values: Dict[str, str]) -> None:
     (root / ".env").write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
+def write_gitignore(template_dir: Path, target_dir: Path) -> None:
+    src = template_dir / "gitignore"
+    if src.exists():
+        content = src.read_text(encoding="utf-8")
+        (target_dir / ".gitignore").write_text(content, encoding="utf-8")
+        # remove copied plain file if exists
+        try:
+            (target_dir / "gitignore").unlink()
+        except FileNotFoundError:
+            pass
+    # clean common artifacts if present in template
+    ds_store = target_dir / ".DS_Store"
+    if ds_store.exists():
+        try:
+            ds_store.unlink()
+        except Exception:
+            pass
+
 def prompt_str(label: str, default: str | None = None, required: bool = False) -> str:
     while True:
         suffix = f" [{default}]" if default is not None else ""
@@ -170,6 +188,7 @@ def main() -> None:
         "__LOG_DIR__": log_dir,
     }
     replace_placeholders(target_dir, mapping)
+    write_gitignore(template_dir, target_dir)
 
     write_env_file(
         target_dir,
